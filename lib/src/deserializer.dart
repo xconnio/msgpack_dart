@@ -15,6 +15,7 @@ class Deserializer {
     Uint8List list, {
     ExtDecoder? extDecoder,
     this.copyBinaryData = false,
+    this.toJSON = false,
   })  : _list = list,
         _data = ByteData.view(list.buffer, list.offsetInBytes),
         _extDecoder = extDecoder;
@@ -25,6 +26,7 @@ class Deserializer {
   /// If true, decoded buffers are copies and the underlying input buffer is
   /// free to change after decoding.
   final bool copyBinaryData;
+  final bool toJSON;
 
   dynamic decode() {
     final u = _list[_offset++];
@@ -38,6 +40,9 @@ class Deserializer {
     } else if ((u & 0xF0) == 0x90) {
       return _readArray(u & 0xF);
     } else if ((u & 0xF0) == 0x80) {
+      if (toJSON) {
+        return _readMapJSON(u & 0xF);
+      }
       return _readMap(u & 0xF);
     }
     switch (u) {
@@ -84,8 +89,14 @@ class Deserializer {
       case 0xdd:
         return _readArray(_readUInt32());
       case 0xde:
+        if (toJSON) {
+          _readMapJSON(_readUInt16());
+        }
         return _readMap(_readUInt16());
       case 0xdf:
+        if (toJSON) {
+          _readMapJSON(_readUInt32());
+        }
         return _readMap(_readUInt32());
       case 0xd4:
         return _readExt(1);
@@ -194,6 +205,15 @@ class Deserializer {
     final res = Map();
     while (length > 0) {
       res[decode()] = decode();
+      --length;
+    }
+    return res;
+  }
+
+  Map<String, dynamic> _readMapJSON(int length) {
+    final Map<String, dynamic> res = {};
+    while (length > 0) {
+      res[decode().toString()] = decode();
       --length;
     }
     return res;

@@ -21,11 +21,13 @@ dynamic deserialize(
   Uint8List list, {
   ExtDecoder? extDecoder,
   bool copyBinaryData = false,
+  bool toJSON = false,
 }) {
   final d = Deserializer(
     list,
     extDecoder: extDecoder,
     copyBinaryData: copyBinaryData,
+    toJSON: toJSON,
   );
   return d.decode();
 }
