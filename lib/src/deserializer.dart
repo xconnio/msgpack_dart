@@ -141,15 +141,27 @@ class Deserializer {
   }
 
   int _readUInt64() {
-    final res = _data.getUint64(_offset);
+    final hi = _data.getUint32(_offset);
+    final lo = _data.getUint32(_offset + 4);
     _offset += 8;
-    return res;
+    final value = (hi * 0x100000000) + lo;
+    const isWeb = bool.fromEnvironment('dart.library.html');
+    if (isWeb && (value > 9007199254740991 || value < -9007199254740991)) {
+      throw FormatError("UInt64 value exceeds JavaScript's safe integer range");
+    }
+    return value;
   }
 
   int _readInt64() {
-    final res = _data.getInt64(_offset);
+    final hi = _data.getInt32(_offset);
+    final lo = _data.getUint32(_offset + 4);
     _offset += 8;
-    return res;
+    final value = (hi * 0x100000000) + lo;
+    const isWeb = bool.fromEnvironment('dart.library.html');
+    if (isWeb && (value > 9007199254740991 || value < -9007199254740991)) {
+      throw FormatError("Int64 value exceeds JavaScript's safe integer range");
+    }
+    return value;
   }
 
   double _readFloat() {
