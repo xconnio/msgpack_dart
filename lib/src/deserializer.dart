@@ -10,6 +10,7 @@ class Deserializer {
   final Uint8List _list;
   final ByteData _data;
   int _offset = 0;
+  final maxIntValue = 9007199254740991;
 
   Deserializer(
     Uint8List list, {
@@ -152,15 +153,31 @@ class Deserializer {
   }
 
   int _readUInt64() {
-    final res = _data.getUint64(_offset);
+    final high = _data.getUint32(_offset);
+    final low = _data.getUint32(_offset + 4);
     _offset += 8;
-    return res;
+
+    final value = BigInt.from(high) << 32 | BigInt.from(low);
+
+    if (value <= BigInt.from(maxIntValue)) {
+      return value.toInt();
+    } else {
+      return _data.getInt64(_offset);
+    }
   }
 
   int _readInt64() {
-    final res = _data.getInt64(_offset);
+    final high = _data.getInt32(_offset);
+    final low = _data.getUint32(_offset + 4);
     _offset += 8;
-    return res;
+
+    final value = (BigInt.from(high) << 32) | BigInt.from(low);
+
+    if (value >= BigInt.from(-maxIntValue) && value <= BigInt.from(maxIntValue)) {
+      return value.toInt();
+    } else {
+      return _data.getInt64(_offset);
+    }
   }
 
   double _readFloat() {
